@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deployment.name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: "{{ .Values.appSelector }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Values.appSelector }}"
+    spec:
+      containers:
+        - name: "{{ .Values.image.name }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.image.containerPort }}
+          
+          command: {{- toYaml .Values.command | nindent 12 }}
+          args: {{- toYaml .Values.args | nindent 12 }}
+          
+          {{- with .Values.livenessProbe }}
+          livenessProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+          volumeMounts:
+            - name: {{ .Values.deployment.configVolume }}
+              mountPath: {{ .Values.config.mountPath }}
+              readOnly: {{ .Values.config.readOnly }}
+          
+      volumes:
+        - name: {{ .Values.deployment.configVolume }}
+          configMap:
+            name: {{ .Values.config.name }}
